@@ -1,7 +1,7 @@
 #include <SDL2/SDL.h>
 
 #include "Renderer.h"
-
+#include "Vec.h"
 int main() {
   int screen_width = 800, screen_height = 600;
   Renderer renderer;
@@ -30,18 +30,38 @@ int main() {
     const float K2 = 650;
     const float K1 = screen_width * K2 * 3 / (8 * (R1 + R2));
 
-    const int num_circles = 100;
-    const int num_segments = 100;
+    const int num_circles = 70;
+    const int num_segments = 40;
 
     for (int i = 0; i < num_circles; ++i) {
+      Vec3<float> p1, p2, p3, p4;
+
       float phi = 2.0f * M_PI * float(i) / float(num_circles);
+      float phi1 = 2.0f * M_PI * float(i) / float(num_circles);
 
       for (int j = 0; j < num_segments; ++j) {
         float theta = 2.0f * M_PI * float(j) / float(num_segments);
+        float theta1 = 2.0f * M_PI * float(j + 1) / float(num_segments);
 
-        float x = (R1 * cos(theta) + R2) * cos(phi);
-        float y = R1 * sin(theta);
-        float z = (R1 * cos(theta) + R2) * sin(phi);
+        // (i,j)
+        p1 = {(R1 * cos(theta) + R2) * cos(phi), R1 * sin(theta),
+              (R1 * cos(theta) + R2) * sin(phi)};
+
+        //(i+1,j)
+        p2 = {(R1 * cos(theta) + R2) * cos(phi1), R1 * sin(theta),
+              (R1 * cos(theta) + R2) * sin(phi1)};
+
+        //(i,j+1)
+        p3 = {(R1 * cos(theta1) + R2) * cos(phi), R1 * sin(theta1),
+              (R1 * cos(theta1) + R2) * sin(phi)};
+
+        //(i+1,j+1)
+        p4 = {(R1 * cos(theta1) + R2) * cos(phi1), R1 * sin(theta1),
+              (R1 * cos(theta1) + R2) * sin(phi1)};
+
+        // trinagle 1 normal
+        Vec3<float> n1 = cross(p1 - p2, p4 - p2);
+        Vec3<float> n2 = cross(p1 - p3, p4 - p3);
 
         int screenX = static_cast<int>((x * K1) / (K2 + z)) + screen_width / 2;
         int screenY = static_cast<int>((y * K1) / (K2 + z)) + screen_height / 2;
