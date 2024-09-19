@@ -3,14 +3,13 @@
 #include <array>
 #include <iostream>
 
+// General template for Vec<N>
 template <typename T, size_t N>
 struct Vec {
   std::array<T, N> data;
 
-  // Default constructor
   Vec() { data.fill(T()); }
 
-  // Constructor with initializer list
   Vec(std::initializer_list<T> list) {
     size_t i = 0;
     for (auto& val : list) {
@@ -18,12 +17,9 @@ struct Vec {
     }
   }
 
-  // Access by index
   T& operator[](size_t index) { return data[index]; }
-
   const T& operator[](size_t index) const { return data[index]; }
 
-  // Operator overloading
   Vec<T, N> operator+(const Vec<T, N>& v) const {
     Vec<T, N> result;
     for (size_t i = 0; i < N; ++i) {
@@ -56,7 +52,6 @@ struct Vec {
     return result;
   }
 
-  // Print for debugging purposes
   friend std::ostream& operator<<(std::ostream& os, const Vec<T, N>& v) {
     os << "(";
     for (size_t i = 0; i < N; ++i) {
@@ -68,69 +63,98 @@ struct Vec {
   }
 };
 
-// Specialization for Vec2 (2D vector) to access x and y
+// Specialization for Vec<2>
 template <typename T>
 struct Vec<T, 2> {
-  std::array<T, 2> data;
+  union {
+    std::array<T, 2> data;
+    struct {
+      T x, y;
+    };
+  };
 
-  Vec() { data.fill(T()); }
-  Vec(T x, T y) : data{x, y} {}
+  Vec() : x(T()), y(T()) {}
+  Vec(T x, T y) : x(x), y(y) {}
 
   T& operator[](size_t index) { return data[index]; }
   const T& operator[](size_t index) const { return data[index]; }
 
-  T& x() { return data[0]; }
-  T& y() { return data[1]; }
+  Vec<T, 2> operator+(const Vec<T, 2>& v) const {
+    return Vec<T, 2>(x + v.x, y + v.y);
+  }
 
-  const T& x() const { return data[0]; }
-  const T& y() const { return data[1]; }
+  Vec<T, 2> operator-(const Vec<T, 2>& v) const {
+    return Vec<T, 2>(x - v.x, y - v.y);
+  }
 
-  // Operator overloading (same as above)
-  // ...
+  Vec<T, 2> operator*(const T& scalar) const {
+    return Vec<T, 2>(x * scalar, y * scalar);
+  }
+
+  Vec<T, 2> operator/(const T& scalar) const {
+    return Vec<T, 2>(x / scalar, y / scalar);
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const Vec<T, 2>& v) {
+    os << "(" << v.x << ", " << v.y << ")";
+    return os;
+  }
 };
 
-// Specialization for Vec3 (3D vector) to access x, y, and z
+// Specialization for Vec<3>
 template <typename T>
 struct Vec<T, 3> {
-  std::array<T, 3> data;
+  union {
+    std::array<T, 3> data;
+    struct {
+      T x, y, z;
+    };
+  };
 
-  Vec() { data.fill(T()); }
-  Vec(T x, T y, T z) : data{x, y, z} {}
+  Vec() : x(T()), y(T()), z(T()) {}
+  Vec(T x, T y, T z) : x(x), y(y), z(z) {}
 
   T& operator[](size_t index) { return data[index]; }
   const T& operator[](size_t index) const { return data[index]; }
 
-  T& x() { return data[0]; }
-  T& y() { return data[1]; }
-  T& z() { return data[2]; }
+  Vec<T, 3> operator+(const Vec<T, 3>& v) const {
+    return Vec<T, 3>(x + v.x, y + v.y, z + v.z);
+  }
 
-  const T& x() const { return data[0]; }
-  const T& y() const { return data[1]; }
-  const T& z() const { return data[2]; }
+  Vec<T, 3> operator-(const Vec<T, 3>& v) const {
+    return Vec<T, 3>(x - v.x, y - v.y, z - v.z);
+  }
 
-  // Operator overloading (same as above)
-  // ...
-  Vec<T, N> operator-(const Vec<T, N>& v) const {
-    Vec<T, N> result;
-    for (size_t i = 0; i < N; ++i) {
-      result[i] = data[i] - v[i];
-    }
-    return result;
+  Vec<T, 3> operator*(const T& scalar) const {
+    return Vec<T, 3>(x * scalar, y * scalar, z * scalar);
+  }
+
+  Vec<T, 3> operator/(const T& scalar) const {
+    return Vec<T, 3>(x / scalar, y / scalar, z / scalar);
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const Vec<T, 3>& v) {
+    os << "(" << v.x << ", " << v.y << ", " << v.z << ")";
+    return os;
   }
 };
 
 // Cross product for Vec3
 template <typename T>
 Vec<T, 3> cross(const Vec<T, 3>& v1, const Vec<T, 3>& v2) {
-  return Vec<T, 3>(v1.y() * v2.z() - v1.z() * v2.y(),
-                   v1.z() * v2.x() - v1.x() * v2.z(),
-                   v1.x() * v2.y() - v1.y() * v2.x());
+  return Vec<T, 3>(v1.y * v2.z - v1.z * v2.y, v1.z * v2.x - v1.x * v2.z,
+                   v1.x * v2.y - v1.y * v2.x);
 }
 
-// Specialization for Vec2 (2D vector)
+// Dot product for Vec3
+template <typename T>
+T dot(const Vec<T, 3>& v1, const Vec<T, 3>& v2) {
+  return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+}
+
+// Type aliases for convenience
 template <typename T>
 using Vec2 = Vec<T, 2>;
 
-// Specialization for Vec3 (3D vector)
 template <typename T>
 using Vec3 = Vec<T, 3>;
