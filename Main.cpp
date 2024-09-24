@@ -1,27 +1,81 @@
 #include <SDL2/SDL.h>
 
+#include <algorithm>
+#include <cmath>
+#include <limits>
+
 #include "Renderer.h"
 #include "Vec.h"
+
 struct Face {
-  Vec3<float> v1, v2, v3;
+  Vec3f v1, v2, v3;
 };
 
-Vec2<int> project(const Vec3<float> v, float K1, float K2, int screen_width,
-                  int screen_height) {
-  int x = static_cast<int>((v.x * K1) / (K2 + v.z)) + screen_width / 2;
-  int y = static_cast<int>((v.y * K1) / (K2 + v.z)) + screen_height / 2;
-  return Vec2<int>(x, y);
+Vec3f project(const Vec3f& v, float K1, float K2, int screen_width,
+              int screen_height) {
+  float x = ((v.x * K1) / (K2 + v.z)) + screen_width / 2.0f;
+  float y = ((v.y * K1) / (K2 + v.z)) + screen_height / 2.0f;
+  return Vec3f(x, y, v.z);
+}
+
+Vec3f barycentric(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2,
+                  const Vec3f& p) {
+  Vec3f s[2];
+  for (int i = 2; i--;) {
+    s[i][0] = v2[i] - v0[i];
+    s[i][1] = v1[i] - v0[i];
+    s[i][2] = v0[i] - p[i];
+  }
+  Vec3f u = cross(s[0], s[1]);
+  if (std::abs(u[2]) > 1e-5)
+    return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
+  return Vec3f(-1, 1, 1);
+}
+
+void barycentric_trianglefill(Renderer* renderer, float* zbuffer,
+                              int screen_width, int screen_height,
+                              const Vec3f& v0, const Vec3f& v1, const Vec3f& v2,
+                              Uint32 color) {
+  Vec2i bboxmin = {
+      static_cast<int>(std::max(0.0f, std::min({v0.x, v1.x, v2.x}))),
+      static_cast<int>(std::max(0.0f, std::min({v0.y, v1.y, v2.y})))};
+  Vec2i bboxmax = {
+      static_cast<int>(std::min(static_cast<float>(screen_width - 1),
+                                std::max({v0.x, v1.x, v2.x}))),
+      static_cast<int>(std::min(static_cast<float>(screen_height - 1),
+                                std::max({v0.y, v1.y, v2.y})))};
+
+  Vec3f p;
+  for (p.x = bboxmin.x; p.x <= bboxmax.x; p.x++) {
+    for (p.y = bboxmin.y; p.y <= bboxmax.y; p.y++) {
+      Vec3f bc_screen = barycentric(v0, v1, v2, p);
+      if (bc_screen.x < 0 || bc_screen.y < 0 || bc_screen.z < 0) continue;
+      p.z = bc_screen.x * v0.z + bc_screen.y * v1.z + bc_screen.z * v2.z;
+      int index = int(p.x + p.y * screen_width);
+      if (zbuffer[index] < p.z) {
+        zbuffer[index] = p.z;
+        renderer->DrawPoint(static_cast<int>(p.x), static_cast<int>(p.y),
+                            color);
+      }
+    }
+  }
 }
 
 void drawTriangle(Renderer& renderer, float* zbuffer, const Face& face,
                   float K1, float K2, int screen_width, int screen_height) {
-  Vec2<int> p1 = project(face.v1, K1, K2, screen_width, screen_height);
-  Vec2<int> p2 = project(face.v2, K1, K2, screen_width, screen_height);
-  Vec2<int> p3 = project(face.v3, K1, K2, screen_width, screen_height);
+  Vec3f p1 = project(face.v1, K1, K2, screen_width, screen_height);
+  Vec3f p2 = project(face.v2, K1, K2, screen_width, screen_height);
+  Vec3f p3 = project(face.v3, K1, K2, screen_width, screen_height);
 
-  renderer.DrawLine(p1.x, p1.y, p2.x, p2.y);
-  renderer.DrawLine(p2.x, p2.y, p3.x, p3.y);
-  renderer.DrawLine(p3.x, p3.y, p1.x, p1.y);
+  barycentric_trianglefill(&renderer, zbuffer, screen_width, screen_height, p1,
+                           p2, p3, 0xFF023047);
+
+  renderer.DrawLine(static_cast<int>(p1.x), static_cast<int>(p1.y),
+                    static_cast<int>(p2.x), static_cast<int>(p2.y));
+  renderer.DrawLine(static_cast<int>(p2.x), static_cast<int>(p2.y),
+                    static_cast<int>(p3.x), static_cast<int>(p3.y));
+  renderer.DrawLine(static_cast<int>(p3.x), static_cast<int>(p3.y),
+                    static_cast<int>(p1.x), static_cast<int>(p1.y));
 }
 
 int main() {
@@ -35,17 +89,14 @@ int main() {
   float* zbuffer = new float[screen_width * screen_height];
 
   while (isRunning) {
+    // Initialize z-buffer
+    std::fill(zbuffer, zbuffer + screen_width * screen_height,
+              std::numeric_limits<float>::lowest());
+
     while (SDL_PollEvent(&event)) {
-      switch (event.type) {
-        case SDL_QUIT:
-          isRunning = false;
-          break;
-        case SDL_KEYDOWN:
-          if (event.key.keysym.sym == SDLK_ESCAPE) {
-            isRunning = false;
-          }
-        default:
-          break;
+      if (event.type == SDL_QUIT ||
+          (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)) {
+        isRunning = false;
       }
     }
     renderer.Clear();
@@ -58,8 +109,6 @@ int main() {
     const int num_circles = 40;
     const int num_segments = 20;
 
-    Vec3<float> light_dir = {0.0f, -1.0f, -1.0f};
-
     for (int i = 0; i < num_circles; ++i) {
       float phi = 2.0f * M_PI * float(i) / float(num_circles);
       float phi1 = 2.0f * M_PI * float(i + 1) / float(num_circles);
@@ -68,21 +117,14 @@ int main() {
         float theta = 2.0f * M_PI * float(j) / float(num_segments);
         float theta1 = 2.0f * M_PI * float(j + 1) / float(num_segments);
 
-        // (i,j)
-        Vec3<float> v1 = {(R1 * cos(theta) + R2) * cos(phi), R1 * sin(theta),
-                          (R1 * cos(theta) + R2) * sin(phi)};
-
-        //(i+1,j)
-        Vec3<float> v2 = {(R1 * cos(theta) + R2) * cos(phi1), R1 * sin(theta),
-                          (R1 * cos(theta) + R2) * sin(phi1)};
-
-        //(i,j+1)
-        Vec3<float> v3 = {(R1 * cos(theta1) + R2) * cos(phi), R1 * sin(theta1),
-                          (R1 * cos(theta1) + R2) * sin(phi)};
-
-        //(i+1,j+1)
-        Vec3<float> v4 = {(R1 * cos(theta1) + R2) * cos(phi1), R1 * sin(theta1),
-                          (R1 * cos(theta1) + R2) * sin(phi1)};
+        Vec3f v1 = {(R1 * cos(theta) + R2) * cos(phi), R1 * sin(theta),
+                    (R1 * cos(theta) + R2) * sin(phi)};
+        Vec3f v2 = {(R1 * cos(theta) + R2) * cos(phi1), R1 * sin(theta),
+                    (R1 * cos(theta) + R2) * sin(phi1)};
+        Vec3f v3 = {(R1 * cos(theta1) + R2) * cos(phi), R1 * sin(theta1),
+                    (R1 * cos(theta1) + R2) * sin(phi)};
+        Vec3f v4 = {(R1 * cos(theta1) + R2) * cos(phi1), R1 * sin(theta1),
+                    (R1 * cos(theta1) + R2) * sin(phi1)};
 
         Face f1 = {v1, v2, v3};
         Face f2 = {v2, v4, v3};
@@ -95,6 +137,8 @@ int main() {
     }
     renderer.Present();
   }
+
+  delete[] zbuffer;
   renderer.Shutdown();
   return 0;
 }

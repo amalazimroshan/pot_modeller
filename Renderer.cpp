@@ -40,8 +40,12 @@ void Renderer::Clear() {
 
 void Renderer::Present() { SDL_RenderPresent(mSDLRenderer); }
 
-void Renderer::DrawPoint(int x, int y) {
-  SDL_SetRenderDrawColor(mSDLRenderer, 255, 255, 255, 255);
+void Renderer::DrawPoint(int x, int y, Uint32 color) {
+  uint8_t a = (color >> 24) & 0xFF;
+  uint8_t r = (color >> 16) & 0xFF;
+  uint8_t g = (color >> 8) & 0xFF;
+  uint8_t b = color & 0xFF;
+  SDL_SetRenderDrawColor(mSDLRenderer, r, g, b, a);
   SDL_RenderDrawPoint(mSDLRenderer, x, y);
 }
 void Renderer::DrawCircle(int centerX, int centerY, int radius) {
@@ -82,7 +86,7 @@ void Renderer::DrawLine(int x1, int y1, int x2, int y2) {
   SDL_RenderDrawLine(mSDLRenderer, x1, y1, x2, y2);
 }
 
-void Renderer::DrawRect(Vec2<int> v1, Vec2<int> v2) {
+void Renderer::DrawRect(Vec2i v1, Vec2i v2) {
   SDL_SetRenderDrawColor(mSDLRenderer, 255, 255, 0, 255);  // White color
   SDL_Rect rect{v1.x, v1.y, v2.x, v2.y};
   SDL_RenderFillRect(mSDLRenderer, &rect);
