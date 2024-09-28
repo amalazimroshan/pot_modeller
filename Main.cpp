@@ -27,7 +27,7 @@ Vec3f barycentric(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2,
     s[i][2] = v0[i] - p[i];
   }
   Vec3f u = cross(s[0], s[1]);
-  if (std::abs(u[2]) > 1e-5)
+  if (std::abs(u[2]) > 1e-1)
     return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
   return Vec3f(-1, 1, 1);
 }
@@ -35,7 +35,7 @@ Vec3f barycentric(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2,
 void barycentric_trianglefill(Renderer* renderer, float* zbuffer,
                               int screen_width, int screen_height,
                               const Vec3f& v0, const Vec3f& v1, const Vec3f& v2,
-                              Uint32 color) {
+                              Uint32 edgeColor, Uint32 faceColor) {
   Vec2i bboxmin = {
       static_cast<int>(std::max(0.0f, std::min({v0.x, v1.x, v2.x}))),
       static_cast<int>(std::max(0.0f, std::min({v0.y, v1.y, v2.y})))};
@@ -46,6 +46,7 @@ void barycentric_trianglefill(Renderer* renderer, float* zbuffer,
                                 std::max({v0.y, v1.y, v2.y})))};
 
   Vec3f p;
+  const float EPSILON = 1e-1f;
   for (p.x = bboxmin.x; p.x <= bboxmax.x; p.x++) {
     for (p.y = bboxmin.y; p.y <= bboxmax.y; p.y++) {
       Vec3f bc_screen = barycentric(v0, v1, v2, p);
@@ -54,6 +55,11 @@ void barycentric_trianglefill(Renderer* renderer, float* zbuffer,
       int index = int(p.x + p.y * screen_width);
       if (zbuffer[index] < p.z) {
         zbuffer[index] = p.z;
+
+        bool isEdge = (bc_screen.x < EPSILON || bc_screen.y < EPSILON ||
+                       bc_screen.z < EPSILON);
+
+        Uint32 color = isEdge ? edgeColor : faceColor;
         renderer->DrawPoint(static_cast<int>(p.x), static_cast<int>(p.y),
                             color);
       }
@@ -68,14 +74,14 @@ void drawTriangle(Renderer& renderer, float* zbuffer, const Face& face,
   Vec3f p3 = project(face.v3, K1, K2, screen_width, screen_height);
 
   barycentric_trianglefill(&renderer, zbuffer, screen_width, screen_height, p1,
-                           p2, p3, 0xFF023047);
+                           p2, p3, 0xFFFFFF00, 0xFF023047);
 
-  renderer.DrawLine(static_cast<int>(p1.x), static_cast<int>(p1.y),
-                    static_cast<int>(p2.x), static_cast<int>(p2.y));
-  renderer.DrawLine(static_cast<int>(p2.x), static_cast<int>(p2.y),
-                    static_cast<int>(p3.x), static_cast<int>(p3.y));
-  renderer.DrawLine(static_cast<int>(p3.x), static_cast<int>(p3.y),
-                    static_cast<int>(p1.x), static_cast<int>(p1.y));
+  // renderer.DrawLine(static_cast<int>(p1.x), static_cast<int>(p1.y),
+  //                   static_cast<int>(p2.x), static_cast<int>(p2.y));
+  // renderer.DrawLine(static_cast<int>(p2.x), static_cast<int>(p2.y),
+  //                   static_cast<int>(p3.x), static_cast<int>(p3.y));
+  // renderer.DrawLine(static_cast<int>(p3.x), static_cast<int>(p3.y),
+  //                   static_cast<int>(p1.x), static_cast<int>(p1.y));
 }
 
 int main() {
