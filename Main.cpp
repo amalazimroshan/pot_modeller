@@ -83,7 +83,24 @@ void drawTriangle(Renderer& renderer, float* zbuffer, const Face& face,
   // renderer.DrawLine(static_cast<int>(p3.x), static_cast<int>(p3.y),
   //                   static_cast<int>(p1.x), static_cast<int>(p1.y));
 }
-
+Vec3f rotatePointZ(const Vec3f& p, float angle) {
+  return Vec3f(p.x * cos(angle) - p.y * sin(angle),
+               p.x * sin(angle) + p.y * cos(angle), p.z);
+}
+Vec3f rotatePointY(const Vec3f& p, float angle) {
+  return Vec3f(p.x * cos(angle) + p.z * sin(angle), p.y,
+               -p.x * sin(angle) + p.z * cos(angle));
+}
+Vec3f rotatePointX(const Vec3f& p, float angle) {
+  return Vec3f(p.x, p.y * cos(angle) - p.z * sin(angle),
+               p.y * sin(angle) + p.z * cos(angle));
+}
+Vec3f rotatePoint(const Vec3f& p, float rotateX, float rotateY, float rotateZ) {
+  Vec3f rotated = rotatePointX(p, rotateX);
+  rotated = rotatePointY(rotated, rotateY);
+  rotated = rotatePointZ(rotated, rotateZ);
+  return rotated;
+}
 int main() {
   int screen_width = 800, screen_height = 600;
   Renderer renderer;
@@ -93,6 +110,9 @@ int main() {
   SDL_Event event;
 
   float* zbuffer = new float[screen_width * screen_height];
+  float rotateX = 0.0f;
+  float rotateY = 0.0f;
+  float rotateZ = 0.0f;
 
   while (isRunning) {
     // Initialize z-buffer
@@ -115,6 +135,10 @@ int main() {
     const int num_circles = 40;
     const int num_segments = 20;
 
+    rotateX += 0.05f;
+    rotateY += 0.05f;
+    rotateZ += 0.05f;
+
     for (int i = 0; i < num_circles; ++i) {
       float phi = 2.0f * M_PI * float(i) / float(num_circles);
       float phi1 = 2.0f * M_PI * float(i + 1) / float(num_circles);
@@ -131,6 +155,11 @@ int main() {
                     (R1 * cos(theta1) + R2) * sin(phi)};
         Vec3f v4 = {(R1 * cos(theta1) + R2) * cos(phi1), R1 * sin(theta1),
                     (R1 * cos(theta1) + R2) * sin(phi1)};
+
+        v1 = rotatePoint(v1, rotateX, rotateY, rotateZ);
+        v2 = rotatePoint(v2, rotateX, rotateY, rotateZ);
+        v3 = rotatePoint(v3, rotateX, rotateY, rotateZ);
+        v4 = rotatePoint(v4, rotateX, rotateY, rotateZ);
 
         Face f1 = {v1, v2, v3};
         Face f2 = {v2, v4, v3};
