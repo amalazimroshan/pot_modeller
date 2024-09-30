@@ -73,15 +73,16 @@ void drawTriangle(Renderer& renderer, float* zbuffer, const Face& face,
   Vec3f p2 = project(face.v2, K1, K2, screen_width, screen_height);
   Vec3f p3 = project(face.v3, K1, K2, screen_width, screen_height);
 
-  barycentric_trianglefill(&renderer, zbuffer, screen_width, screen_height, p1,
-                           p2, p3, 0xFFFFFF00, 0xFF023047);
+  // barycentric_trianglefill(&renderer, zbuffer, screen_width, screen_height,
+  // p1,
+  //                          p2, p3, 0xFFFFFF00, 0xFF023047);
 
-  // renderer.DrawLine(static_cast<int>(p1.x), static_cast<int>(p1.y),
-  //                   static_cast<int>(p2.x), static_cast<int>(p2.y));
-  // renderer.DrawLine(static_cast<int>(p2.x), static_cast<int>(p2.y),
-  //                   static_cast<int>(p3.x), static_cast<int>(p3.y));
-  // renderer.DrawLine(static_cast<int>(p3.x), static_cast<int>(p3.y),
-  //                   static_cast<int>(p1.x), static_cast<int>(p1.y));
+  renderer.DrawLine(static_cast<int>(p1.x), static_cast<int>(p1.y),
+                    static_cast<int>(p2.x), static_cast<int>(p2.y));
+  renderer.DrawLine(static_cast<int>(p2.x), static_cast<int>(p2.y),
+                    static_cast<int>(p3.x), static_cast<int>(p3.y));
+  renderer.DrawLine(static_cast<int>(p3.x), static_cast<int>(p3.y),
+                    static_cast<int>(p1.x), static_cast<int>(p1.y));
 }
 Vec3f rotatePointZ(const Vec3f& p, float angle) {
   return Vec3f(p.x * cos(angle) - p.y * sin(angle),
@@ -120,9 +121,13 @@ int main() {
               std::numeric_limits<float>::lowest());
 
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_QUIT ||
-          (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)) {
-        isRunning = false;
+      if (event.type == SDL_QUIT) isRunning = false;
+
+      if (event.type == SDL_KEYDOWN) {
+        if (event.key.keysym.sym == SDLK_ESCAPE) isRunning = false;
+        if (event.key.keysym.sym == SDLK_a) rotateY += 0.02;
+        if (event.key.keysym.sym == SDLK_s) rotateX -= 0.02;
+        if (event.key.keysym.sym == SDLK_d) rotateZ -= 0.02;
       }
     }
     renderer.Clear();
@@ -135,9 +140,9 @@ int main() {
     const int num_circles = 40;
     const int num_segments = 20;
 
-    rotateX += 0.05f;
-    rotateY += 0.05f;
-    rotateZ += 0.05f;
+    // rotateX += 0.01f;
+    // rotateY += 0.01f;
+    // rotateZ += 0.01f;
 
     for (int i = 0; i < num_circles; ++i) {
       float phi = 2.0f * M_PI * float(i) / float(num_circles);
