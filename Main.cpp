@@ -46,7 +46,7 @@ void barycentric_trianglefill(Renderer* renderer, float* zbuffer,
                                 std::max({v0.y, v1.y, v2.y})))};
 
   Vec3f p;
-  const float EPSILON = 1e-1f;
+  const float EPSILON = 0.03;
   for (p.x = bboxmin.x; p.x <= bboxmax.x; p.x++) {
     for (p.y = bboxmin.y; p.y <= bboxmax.y; p.y++) {
       Vec3f bc_screen = barycentric(v0, v1, v2, p);
@@ -73,16 +73,16 @@ void drawTriangle(Renderer& renderer, float* zbuffer, const Face& face,
   Vec3f p2 = project(face.v2, K1, K2, screen_width, screen_height);
   Vec3f p3 = project(face.v3, K1, K2, screen_width, screen_height);
 
-  // barycentric_trianglefill(&renderer, zbuffer, screen_width, screen_height,
-  // p1,
-  //                          p2, p3, 0xFFFFFF00, 0xFF023047);
+  barycentric_trianglefill(&renderer, zbuffer, screen_width, screen_height,
+  p1,
+                           p2, p3, 0xFFFFFF00, 0xFF023047);
 
-  renderer.DrawLine(static_cast<int>(p1.x), static_cast<int>(p1.y),
-                    static_cast<int>(p2.x), static_cast<int>(p2.y));
-  renderer.DrawLine(static_cast<int>(p2.x), static_cast<int>(p2.y),
-                    static_cast<int>(p3.x), static_cast<int>(p3.y));
-  renderer.DrawLine(static_cast<int>(p3.x), static_cast<int>(p3.y),
-                    static_cast<int>(p1.x), static_cast<int>(p1.y));
+  // renderer.DrawLine(static_cast<int>(p1.x), static_cast<int>(p1.y),
+  //                   static_cast<int>(p2.x), static_cast<int>(p2.y));
+  // renderer.DrawLine(static_cast<int>(p2.x), static_cast<int>(p2.y),
+  //                   static_cast<int>(p3.x), static_cast<int>(p3.y));
+  // renderer.DrawLine(static_cast<int>(p3.x), static_cast<int>(p3.y),
+  //                   static_cast<int>(p1.x), static_cast<int>(p1.y));
 }
 Vec3f rotatePointZ(const Vec3f& p, float angle) {
   return Vec3f(p.x * cos(angle) - p.y * sin(angle),
@@ -145,21 +145,21 @@ int main() {
     // rotateZ += 0.01f;
 
     for (int i = 0; i < num_circles; ++i) {
-      float phi = 2.0f * M_PI * float(i) / float(num_circles);
-      float phi1 = 2.0f * M_PI * float(i + 1) / float(num_circles);
+      float phi = 2.0f * M_PI  / float(num_circles);
+      // float phi1 = 2.0f * M_PI * float(i + 1) / float(num_circles);
 
       for (int j = 0; j < num_segments; ++j) {
-        float theta = 2.0f * M_PI * float(j) / float(num_segments);
-        float theta1 = 2.0f * M_PI * float(j + 1) / float(num_segments);
+        float theta = 2.0f * M_PI  / float(num_segments);
+        // float theta1 = 2.0f * M_PI * float(j + 1) / float(num_segments);
 
-        Vec3f v1 = {(R1 * cos(theta) + R2) * cos(phi), R1 * sin(theta),
-                    (R1 * cos(theta) + R2) * sin(phi)};
-        Vec3f v2 = {(R1 * cos(theta) + R2) * cos(phi1), R1 * sin(theta),
-                    (R1 * cos(theta) + R2) * sin(phi1)};
-        Vec3f v3 = {(R1 * cos(theta1) + R2) * cos(phi), R1 * sin(theta1),
-                    (R1 * cos(theta1) + R2) * sin(phi)};
-        Vec3f v4 = {(R1 * cos(theta1) + R2) * cos(phi1), R1 * sin(theta1),
-                    (R1 * cos(theta1) + R2) * sin(phi1)};
+        Vec3f v1 = {(R1 * cos(theta* float(j)) + R2) * cos(phi* float(i)), R1 * sin(theta* float(j)),
+                    (R1 * cos(theta* float(j)) + R2) * sin(phi* float(i))};
+        Vec3f v2 = {(R1 * cos(theta* float(j)) + R2) * cos(phi* float(i+1)), R1 * sin(theta* float(j)),
+                    (R1 * cos(theta* float(j)) + R2) * sin(phi* float(i+1))};
+        Vec3f v3 = {(R1 * cos(theta* float(j+1)) + R2) * cos(phi* float(i)), R1 * sin(theta* float(j+1)),
+                    (R1 * cos(theta* float(j+1)) + R2) * sin(phi* float(i))};
+        Vec3f v4 = {(R1 * cos(theta* float(j+1)) + R2) * cos(phi* float(i+1)), R1 * sin(theta* float(j+1)),
+                    (R1 * cos(theta* float(j+1)) + R2) * sin(phi* float(i+1))};
 
         v1 = rotatePoint(v1, rotateX, rotateY, rotateZ);
         v2 = rotatePoint(v2, rotateX, rotateY, rotateZ);
