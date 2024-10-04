@@ -67,14 +67,33 @@ void barycentric_trianglefill(Renderer* renderer, float* zbuffer,
   }
 }
 
+uint32_t applyLightIntensity(uint32_t base_color, float intensity) {
+  uint8_t a = (base_color >> 24) & 0xFF;  // Alpha stays the same
+  uint8_t r = static_cast<uint8_t>(((base_color >> 16) & 0xFF) * intensity);
+  uint8_t g = static_cast<uint8_t>(((base_color >> 8) & 0xFF) * intensity);
+  uint8_t b = static_cast<uint8_t>((base_color & 0xFF) * intensity);
+  return (a << 24) | (r << 16) | (g << 8) | b;
+}
+
 void drawTriangle(Renderer& renderer, float* zbuffer, const Face& face,
                   float K1, float K2, int screen_width, int screen_height) {
+  // TODO:: couldn't render with light intensity
+  Vec3f light_dir(0, 0, -1);
+  Vec3f n = cross((face.v3 - face.v2), (face.v2 - face.v1));
+  n.normalize();
+  float intensity = n * light_dir;
+  intensity = std::max(0.0f, std::min(1.0f, intensity));
+
+  uint32_t base_color = 0xFFFFFFFF;
+  uint32_t color_with_light = applyLightIntensity(base_color, intensity);
+
+  ///////////////////////////////////////////////
+
   Vec3f p1 = project(face.v1, K1, K2, screen_width, screen_height);
   Vec3f p2 = project(face.v2, K1, K2, screen_width, screen_height);
   Vec3f p3 = project(face.v3, K1, K2, screen_width, screen_height);
 
-  barycentric_trianglefill(&renderer, zbuffer, screen_width, screen_height,
-  p1,
+  barycentric_trianglefill(&renderer, zbuffer, screen_width, screen_height, p1,
                            p2, p3, 0xFFFFFF00, 0xFF023047);
 
   // renderer.DrawLine(static_cast<int>(p1.x), static_cast<int>(p1.y),
@@ -145,21 +164,28 @@ int main() {
     // rotateZ += 0.01f;
 
     for (int i = 0; i < num_circles; ++i) {
-      float phi = 2.0f * M_PI  / float(num_circles);
+      float phi = 2.0f * M_PI / float(num_circles);
       // float phi1 = 2.0f * M_PI * float(i + 1) / float(num_circles);
 
       for (int j = 0; j < num_segments; ++j) {
-        float theta = 2.0f * M_PI  / float(num_segments);
+        float theta = 2.0f * M_PI / float(num_segments);
         // float theta1 = 2.0f * M_PI * float(j + 1) / float(num_segments);
 
-        Vec3f v1 = {(R1 * cos(theta* float(j)) + R2) * cos(phi* float(i)), R1 * sin(theta* float(j)),
-                    (R1 * cos(theta* float(j)) + R2) * sin(phi* float(i))};
-        Vec3f v2 = {(R1 * cos(theta* float(j)) + R2) * cos(phi* float(i+1)), R1 * sin(theta* float(j)),
-                    (R1 * cos(theta* float(j)) + R2) * sin(phi* float(i+1))};
-        Vec3f v3 = {(R1 * cos(theta* float(j+1)) + R2) * cos(phi* float(i)), R1 * sin(theta* float(j+1)),
-                    (R1 * cos(theta* float(j+1)) + R2) * sin(phi* float(i))};
-        Vec3f v4 = {(R1 * cos(theta* float(j+1)) + R2) * cos(phi* float(i+1)), R1 * sin(theta* float(j+1)),
-                    (R1 * cos(theta* float(j+1)) + R2) * sin(phi* float(i+1))};
+        Vec3f v1 = {(R1 * cos(theta * float(j)) + R2) * cos(phi * float(i)),
+                    R1 * sin(theta * float(j)),
+                    (R1 * cos(theta * float(j)) + R2) * sin(phi * float(i))};
+        Vec3f v2 = {
+            (R1 * cos(theta * float(j)) + R2) * cos(phi * float(i + 1)),
+            R1 * sin(theta * float(j)),
+            (R1 * cos(theta * float(j)) + R2) * sin(phi * float(i + 1))};
+        Vec3f v3 = {
+            (R1 * cos(theta * float(j + 1)) + R2) * cos(phi * float(i)),
+            R1 * sin(theta * float(j + 1)),
+            (R1 * cos(theta * float(j + 1)) + R2) * sin(phi * float(i))};
+        Vec3f v4 = {
+            (R1 * cos(theta * float(j + 1)) + R2) * cos(phi * float(i + 1)),
+            R1 * sin(theta * float(j + 1)),
+            (R1 * cos(theta * float(j + 1)) + R2) * sin(phi * float(i + 1))};
 
         v1 = rotatePoint(v1, rotateX, rotateY, rotateZ);
         v2 = rotatePoint(v2, rotateX, rotateY, rotateZ);
