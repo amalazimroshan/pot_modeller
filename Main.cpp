@@ -1,11 +1,11 @@
 #include <SDL2/SDL.h>
+#include <geometry.h>
 
 #include <algorithm>
 #include <cmath>
 #include <limits>
 
 #include "Renderer.h"
-#include "Vec.h"
 
 struct Face {
   Vec3f v1, v2, v3;
@@ -18,15 +18,14 @@ Vec3f project(const Vec3f& v, float K1, float K2, int screen_width,
   return Vec3f(x, y, v.z);
 }
 
-Vec3f barycentric(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2,
-                  const Vec3f& p) {
+Vec3f barycentric(Vec3f v0, Vec3f v1, Vec3f v2, Vec3f p) {
   Vec3f s[2];
   for (int i = 2; i--;) {
     s[i][0] = v2[i] - v0[i];
     s[i][1] = v1[i] - v0[i];
     s[i][2] = v0[i] - p[i];
   }
-  Vec3f u = cross(s[0], s[1]);
+  Vec3f u = s[0] ^ s[1];
   if (std::abs(u[2]) > 1e-1)
     return Vec3f(1.f - (u.x + u.y) / u.z, u.y / u.z, u.x / u.z);
   return Vec3f(-1, 1, 1);
@@ -79,7 +78,7 @@ void drawTriangle(Renderer& renderer, float* zbuffer, const Face& face,
                   float K1, float K2, int screen_width, int screen_height) {
   // TODO:: couldn't render with light intensity
   Vec3f light_dir(0, 0, -1);
-  Vec3f n = cross((face.v3 - face.v2), (face.v2 - face.v1));
+  Vec3f n = (face.v3 - face.v2) ^ (face.v2 - face.v1);
   n.normalize();
   float intensity = n * light_dir;
   intensity = std::max(0.0f, std::min(1.0f, intensity));
@@ -93,15 +92,16 @@ void drawTriangle(Renderer& renderer, float* zbuffer, const Face& face,
   Vec3f p2 = project(face.v2, K1, K2, screen_width, screen_height);
   Vec3f p3 = project(face.v3, K1, K2, screen_width, screen_height);
 
-  barycentric_trianglefill(&renderer, zbuffer, screen_width, screen_height, p1,
-                           p2, p3, 0xFFFFFF00, 0xFF023047);
+  // barycentric_trianglefill(&renderer, zbuffer, screen_width, screen_height,
+  // p1,
+  //  p2, p3, 0xFFFFFF00, 0xFF023047);
 
-  // renderer.DrawLine(static_cast<int>(p1.x), static_cast<int>(p1.y),
-  //                   static_cast<int>(p2.x), static_cast<int>(p2.y));
-  // renderer.DrawLine(static_cast<int>(p2.x), static_cast<int>(p2.y),
-  //                   static_cast<int>(p3.x), static_cast<int>(p3.y));
-  // renderer.DrawLine(static_cast<int>(p3.x), static_cast<int>(p3.y),
-  //                   static_cast<int>(p1.x), static_cast<int>(p1.y));
+  renderer.DrawLine(static_cast<int>(p1.x), static_cast<int>(p1.y),
+                    static_cast<int>(p2.x), static_cast<int>(p2.y));
+  renderer.DrawLine(static_cast<int>(p2.x), static_cast<int>(p2.y),
+                    static_cast<int>(p3.x), static_cast<int>(p3.y));
+  renderer.DrawLine(static_cast<int>(p3.x), static_cast<int>(p3.y),
+                    static_cast<int>(p1.x), static_cast<int>(p1.y));
 }
 Vec3f rotatePointZ(const Vec3f& p, float angle) {
   return Vec3f(p.x * cos(angle) - p.y * sin(angle),
