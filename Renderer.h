@@ -1,7 +1,7 @@
 #pragma once
 #include <SDL2/SDL.h>
 
-#include "Vec.h"
+#include "geometry.h"
 class Renderer {
  public:
   Renderer();

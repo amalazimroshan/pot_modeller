@@ -92,9 +92,8 @@ void drawTriangle(Renderer& renderer, float* zbuffer, const Face& face,
   Vec3f p2 = project(face.v2, K1, K2, screen_width, screen_height);
   Vec3f p3 = project(face.v3, K1, K2, screen_width, screen_height);
 
-  // barycentric_trianglefill(&renderer, zbuffer, screen_width, screen_height,
-  // p1,
-  //  p2, p3, 0xFFFFFF00, 0xFF023047);
+  barycentric_trianglefill(&renderer, zbuffer, screen_width, screen_height, p1,
+                           p2, p3, 0xFFFFFF00, 0xFF023047);
 
   renderer.DrawLine(static_cast<int>(p1.x), static_cast<int>(p1.y),
                     static_cast<int>(p2.x), static_cast<int>(p2.y));
