@@ -11,7 +11,7 @@ INCLUDES = -I.
 LIBS = -lSDL2
 
 # Source files
-SRCS = Main.cpp Renderer.cpp
+SRCS = Main.cpp display.cpp mesh.cpp geometry.cpp
 
 # Object files
 OBJS = $(SRCS:.cpp=.o)
