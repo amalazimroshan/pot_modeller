@@ -7,7 +7,7 @@ class Renderer {
   Renderer();
   ~Renderer();
 
-  bool initialize();
+  bool initialize(int windowWidth, int windowheight);
   void shutdown();
   void clear();
   void present();

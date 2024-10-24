@@ -10,12 +10,13 @@ Renderer::Renderer()
 
 Renderer::~Renderer() {}
 
-bool Renderer::initialize() {
+bool Renderer::initialize(int windowWidth, int windowHeight) {
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
     return false;
   }
-
+  // windowWidth = screenWidth;
+  // windowHeight = screenHeight;
   mWindow = SDL_CreateWindow("Physics Simulation", 100, 100, windowWidth,
                              windowHeight, 0);
   if (!mWindow) {
