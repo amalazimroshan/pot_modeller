@@ -10,7 +10,8 @@
 #include "mesh.h"
 
 int screen_width = 1200, screen_height = 800, depth = 255;
-Vec3f camera(0, 0, 3);
+Vec3f eye(0, -2, 10);
+Vec3f center(0, 0, 0);
 
 Matrix viewPort(int x, int y, int w, int h) {
   Matrix m = Matrix::identity(4);
@@ -25,6 +26,20 @@ Matrix viewPort(int x, int y, int w, int h) {
   return m;
 }
 
+Matrix lookAt(Vec3f eye, Vec3f center, Vec3f up) {
+  Vec3f z = (eye - center).normalize();
+  Vec3f x = (up ^ z).normalize();
+  Vec3f y = (z ^ x).normalize();
+  Matrix res = Matrix::identity(4);
+  for (int i = 0; i < 3; i++) {
+    res[0][i] = x[i];
+    res[1][i] = y[i];
+    res[2][i] = z[i];
+    res[i][3] = -eye[i];
+  }
+  return res;
+}
+
 Matrix projection(float aspectRatio) {
   Matrix m = Matrix::identity(4);
   if (aspectRatio > 1.0f) {
@@ -32,7 +47,7 @@ Matrix projection(float aspectRatio) {
   } else {
     m[1][1] = aspectRatio;
   }
-  m[3][2] = -1.f / camera.z;
+  m[3][2] = -1.f / (eye - center).norm();
   return m;
 }
 
@@ -52,6 +67,7 @@ int main() {
 
     renderer.clear();
 
+    Matrix ModelView = lookAt(eye, center, Vec3f(0, 1, 0));
     float aspectRatio =
         static_cast<float>(screen_width) / static_cast<float>(screen_height);
     Matrix Projection = projection(aspectRatio);
@@ -70,9 +86,9 @@ int main() {
 
     for (const auto& face : cube.faces) {
       for (int i = 0; i < 3; i++) {
-        Vec3f v0 = Vec3f(ViewPort * Projection * rotation *
+        Vec3f v0 = Vec3f(ViewPort * Projection * ModelView * rotation *
                          Matrix(cube.vertices[face[i]]));
-        Vec3f v1 = Vec3f(ViewPort * Projection * rotation *
+        Vec3f v1 = Vec3f(ViewPort * Projection * ModelView * rotation *
                          Matrix(cube.vertices[face[(i + 1) % 3]]));
         renderer.drawLine(v0, v1);
       }
