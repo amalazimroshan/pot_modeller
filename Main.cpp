@@ -10,7 +10,7 @@
 #include "mesh.h"
 
 int screen_width = 1200, screen_height = 800, depth = 255;
-Vec3f eye(0, -2, 10);
+Vec3f eye(0, 0, 3);
 Vec3f center(0, 0, 0);
 
 Matrix viewPort(int x, int y, int w, int h) {
@@ -24,6 +24,51 @@ Matrix viewPort(int x, int y, int w, int h) {
   m[2][2] = depth / 2.f;
 
   return m;
+}
+
+Matrix translate(Vec3f t){
+  Matrix m =  Matrix::identity(4);
+  for(int i=3;i--;){
+    m[i][3] = t[i];
+  }
+  return m;
+}
+
+Matrix scale(Vec3f t){
+  Matrix m =  Matrix::identity(4);
+  for(int i=3;i--;){
+    m[i][i] = t[i];
+  }
+  return m;
+}
+
+
+Matrix rotate(Vec3f angles) {
+    // Convert angles from degrees to radians
+    float x_angle = angles.x * M_PI / 180.0f;
+    float y_angle = angles.y * M_PI / 180.0f;
+    float z_angle = angles.z * M_PI / 180.0f;
+
+    // Create rotation matrices for each axis
+    Matrix rx = Matrix::identity(4);
+    rx[1][1] = std::cos(x_angle);
+    rx[1][2] = -std::sin(x_angle);
+    rx[2][1] = std::sin(x_angle);
+    rx[2][2] = std::cos(x_angle);
+
+    Matrix ry = Matrix::identity(4);
+    ry[0][0] = std::cos(y_angle);
+    ry[0][2] = std::sin(y_angle);
+    ry[2][0] = -std::sin(y_angle);
+    ry[2][2] = std::cos(y_angle);
+
+    Matrix rz = Matrix::identity(4);
+    rz[0][0] = std::cos(z_angle);
+    rz[0][1] = -std::sin(z_angle);
+    rz[1][0] = std::sin(z_angle);
+    rz[1][1] = std::cos(z_angle);
+
+    return rz * ry * rx;
 }
 
 Matrix lookAt(Vec3f eye, Vec3f center, Vec3f up) {
@@ -57,6 +102,18 @@ int main() {
   bool isRunning = true;
   SDL_Event event;
 
+    Matrix ModelView = lookAt(eye, center, Vec3f(0, 1, 0));
+    float aspectRatio =
+        static_cast<float>(screen_width) / static_cast<float>(screen_height);
+    Matrix Projection = projection(aspectRatio);
+    Matrix ViewPort = viewPort(0, 0, screen_width, screen_height);
+
+   Matrix Translate = translate(Vec3f(0,0,0));
+    Matrix Scale = scale(Vec3f(1,2,1));
+
+    Mesh cube;
+    cube.addCube(cube);
+
   while (isRunning) {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) isRunning = false;
@@ -67,28 +124,16 @@ int main() {
 
     renderer.clear();
 
-    Matrix ModelView = lookAt(eye, center, Vec3f(0, 1, 0));
-    float aspectRatio =
-        static_cast<float>(screen_width) / static_cast<float>(screen_height);
-    Matrix Projection = projection(aspectRatio);
-
-    Matrix ViewPort = viewPort(0, 0, screen_width, screen_height);
-
-    Mesh cube;
-    cube.addCube(cube);
-
-    float angle = SDL_GetTicks() / 1000.0f;  // Rotation based on time
-    Matrix rotation = Matrix::identity(4);
-    rotation[0][0] = cos(angle);
-    rotation[0][2] = sin(angle);
-    rotation[2][0] = -sin(angle);
-    rotation[2][2] = cos(angle);
+    float angle = SDL_GetTicks() / 100.0f;  // Rotation based on time
+    
+    Matrix Rotate = rotate(Vec3f(0, angle, 0));
+    Matrix Model = Scale * Translate *  Rotate; 
 
     for (const auto& face : cube.faces) {
       for (int i = 0; i < 3; i++) {
-        Vec3f v0 = Vec3f(ViewPort * Projection * ModelView * rotation *
+        Vec3f v0 = Vec3f(ViewPort * Projection * ModelView * Model *
                          Matrix(cube.vertices[face[i]]));
-        Vec3f v1 = Vec3f(ViewPort * Projection * ModelView * rotation *
+        Vec3f v1 = Vec3f(ViewPort * Projection * ModelView * Model *
                          Matrix(cube.vertices[face[(i + 1) % 3]]));
         renderer.drawLine(v0, v1);
       }
