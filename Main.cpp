@@ -1,8 +1,10 @@
 #include <SDL2/SDL.h>
 #include <geometry.h>
-#include <chrono>
+
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <image_view.hpp>
 #include <iostream>
 #include <limits>
 
@@ -28,8 +30,8 @@ Matrix viewPort(int x, int y, int w, int h) {
 
 Matrix lookAt(Vec3f eye, Vec3f center, Vec3f up) {
   Vec3f z = (eye - center).normalize();
-  Vec3f x = cross(up , z).normalize();
-  Vec3f y = cross(z , x).normalize();
+  Vec3f x = cross(up, z).normalize();
+  Vec3f y = cross(z, x).normalize();
   Matrix res = Matrix::identity();
   for (int i = 0; i < 3; i++) {
     res[0][i] = x[i];
@@ -51,27 +53,32 @@ Matrix projection(float aspectRatio) {
   return m;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   Mesh mesh;
-  if(argc < 2){
+  if (argc < 2) {
     mesh = Mesh::createCube();
+  } else {
+    mesh = Mesh::createOBJ(argv[argc - 1]);
   }
-  else{
-    mesh = Mesh::createOBJ(argv[argc-1]);
-  }
-  Renderer renderer;
-  renderer.initialize(screen_width, screen_height);
+  // Renderer renderer;
+  // renderer.initialize(screen_width, screen_height);
+  SDL_Window* window = SDL_CreateWindow(
+      "tiny rasterizer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+      screen_width, screen_height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
+  SDL_Surface* draw_surface = nullptr;
+
   bool isRunning = true;
   SDL_Event event;
 
+  Matrix ModelView = lookAt(eye, center, Vec3f(0, 1, 0));
+  float aspectRatio =
+      static_cast<float>(screen_width) / static_cast<float>(screen_height);
+  Matrix Projection = projection(aspectRatio);
+  Matrix ViewPort = viewPort(0, 0, screen_width, screen_height);
 
-    Matrix ModelView = lookAt(eye, center, Vec3f(0, 1, 0));
-    float aspectRatio =
-        static_cast<float>(screen_width) / static_cast<float>(screen_height);
-    Matrix Projection = projection(aspectRatio);
-    Matrix ViewPort = viewPort(0, 0, screen_width, screen_height);
+  using clock = std::chrono::high_resolution_clock;
+  auto last_frame_start = clock::now();
 
-                
   while (isRunning) {
     while (SDL_PollEvent(&event)) {
       if (event.type == SDL_QUIT) isRunning = false;
@@ -80,22 +87,53 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    renderer.clear();
+    if (!draw_surface) {
+      draw_surface = SDL_CreateRGBSurfaceWithFormat(
+          0, screen_width, screen_height, 32, SDL_PIXELFORMAT_RGBA32);
+      SDL_SetSurfaceBlendMode(draw_surface, SDL_BLENDMODE_NONE);
+    }
+    auto now = clock::now();
+    float dt = std::chrono::duration_cast<std::chrono::duration<float>>(
+                   now - last_frame_start)
+                   .count();
+    last_frame_start = now;
+    std::cout << dt << std::endl;
+
+    rasterizer::image_view color_buffer{
+        .pixels = (color4ub*)draw_surface->pixels,
+        .width = (std::uint32_t)screen_width,
+        .height = (std::uint32_t)screen_height,
+    };
+
+    auto ptr = color_buffer.pixels;
+    auto size = color_buffer.height * color_buffer.width;
+    std::fill(ptr, ptr + size, color4ub{0, 28, 73, 255});
 
     float angle = SDL_GetTicks() / 100.0f;  // Rotation based on time
-    Matrix Model =Mesh::createScaleMatrix(Vec3f(0.7,0.7,0.7)) *  Mesh::createTranslateMatrix(Vec3f(0,2,0)) *  Mesh::createRotateMatrix(Vec3f(180, angle, 0));
-    
+    Matrix scale = Mesh::createScaleMatrix(Vec3f(0.7, 0.7, 0.7));
+    Matrix rotation = Mesh::createRotateMatrix(Vec3f(180, angle, 0));
+    Matrix translate = Mesh::createTranslateMatrix(Vec3f(0, 2, 0));
+    Matrix Model = scale * rotation * translate;
+
     for (const auto& face : mesh.faces) {
       for (int i = 0; i < 3; i++) {
         Vec3f v0 = Vec3f(ViewPort * Projection * ModelView * Model *
                          Matrix(mesh.vertices[face[i]]));
         Vec3f v1 = Vec3f(ViewPort * Projection * ModelView * Model *
                          Matrix(mesh.vertices[face[(i + 1) % 3]]));
-        renderer.drawLine(v0,v1);
+        Vec3f v2 = Vec3f(ViewPort * Projection * ModelView * Model *
+                         Matrix(mesh.vertices[face[(i + 2) % 3]]));
+
+        // std::cout << v0 << '\n' << v1 << '\n' << v2 << std::endl;
+        // exit(1);
       }
     }
-    renderer.present();
+
+    SDL_Rect rect{.x = 0, .y = 0, .w = screen_width, .h = screen_height};
+    SDL_BlitSurface(draw_surface, &rect, SDL_GetWindowSurface(window), &rect);
+    SDL_UpdateWindowSurface(window);
+    // renderer.present();
   }
-  renderer.shutdown();
+  // renderer.shutdown();
   return 0;
 }

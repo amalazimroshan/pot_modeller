@@ -3,8 +3,13 @@
 #include <cmath>
 #include <vector>
 #include <cassert>
+#include <cstdint>
 #include <iostream>
 
+
+struct color4ub{
+    std::uint8_t r, g,b,a;
+};
 template<size_t DimCols,size_t DimRows,typename T> class mat;
 
 template <size_t DIM, typename T> struct vec {

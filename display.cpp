@@ -1,5 +1,5 @@
 #include "display.h"
-
+#include "image_view.hpp"
 #include <cmath>
 
 Renderer::Renderer()
@@ -37,9 +37,11 @@ void Renderer::shutdown() {
   SDL_DestroyWindow(mWindow);
 }
 
-void Renderer::clear() {
-  SDL_SetRenderDrawColor(mSDLRenderer, 0, 0, 0, 255);
-  SDL_RenderClear(mSDLRenderer);
+void clear(rasterizer::image_view const& color_buffer, color4ub const& color ) {
+  auto ptr = color_buffer.pixels;
+  auto size = color_buffer.height * color_buffer.width;
+  std::fill(ptr,ptr+size, color);
+  
 }
 
 void Renderer::present() { SDL_RenderPresent(mSDLRenderer); }
