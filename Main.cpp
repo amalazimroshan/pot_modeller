@@ -111,21 +111,19 @@ int main(int argc, char* argv[]) {
 
     float angle = SDL_GetTicks() / 100.0f;  // Rotation based on time
     Matrix scale = Mesh::createScaleMatrix(Vec3f(0.7, 0.7, 0.7));
-    Matrix rotation = Mesh::createRotateMatrix(Vec3f(180, angle, 0));
-    Matrix translate = Mesh::createTranslateMatrix(Vec3f(0, 2, 0));
+    Matrix rotation = Mesh::createRotateMatrix(Vec3f(angle, angle, angle));
+    Matrix translate = Mesh::createTranslateMatrix(Vec3f(0, -1, 0));
     Matrix Model = scale * rotation * translate;
 
-    for (const auto& face : mesh.faces) {
-      for (int i = 0; i < 3; i++) {
-        Vec3f v0 = Vec3f(ViewPort * Projection * ModelView * Model *
-                         Matrix(mesh.vertices[face[i]]));
-        Vec3f v1 = Vec3f(ViewPort * Projection * ModelView * Model *
-                         Matrix(mesh.vertices[face[(i + 1) % 3]]));
-        Vec3f v2 = Vec3f(ViewPort * Projection * ModelView * Model *
-                         Matrix(mesh.vertices[face[(i + 2) % 3]]));
-
-        rasterizer::draw(color_buffer, v0, v1, v2);
-      }
+    Matrix MVP = ViewPort * Projection * ModelView * Model;
+    // for (const auto& face : mesh.faces) {
+    for (std::size_t i = 0; i < mesh.faces.size(); ++i) {
+      const auto& face = mesh.faces[i];
+      Vec3f v0 = Vec3f(MVP * Matrix(mesh.vertices[face[0]]));
+      Vec3f v1 = Vec3f(MVP * Matrix(mesh.vertices[face[1]]));
+      Vec3f v2 = Vec3f(MVP * Matrix(mesh.vertices[face[2]]));
+      const color4ub color = color4ub(120, i * 20, i * 20);
+      rasterizer::draw(color_buffer, v0, v1, v2, color);
     }
 
     SDL_Rect rect{.x = 0, .y = 0, .w = screen_width, .h = screen_height};

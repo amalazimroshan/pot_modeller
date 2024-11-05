@@ -47,7 +47,8 @@ void clear(rasterizer::image_view const& color_buffer, color4ub const& color) {
 }
 
 namespace rasterizer {
-void draw(image_view& color_buffer, Vec3f v0, Vec3f v1, Vec3f v2) {
+void draw(image_view& color_buffer, Vec3f v0, Vec3f v1, Vec3f v2,
+          color4ub color) {
   std::int32_t xmin = std::max<float>(
       0, std::min({std::floor(v0.x), std::floor(v1.x), std::floor(v2.x)}));
   std::int32_t xmax = std::min<float>(
@@ -59,6 +60,12 @@ void draw(image_view& color_buffer, Vec3f v0, Vec3f v1, Vec3f v2) {
       color_buffer.height - 1,
       std::max({std::floor(v0.y), std::floor(v1.y), std::floor(v2.y)}));
 
+  float det012 = det2D(v1 - v0, v2 - v0);
+  bool const ccw = det012 < 0.f;
+  if (ccw) {
+    std::swap(v1, v2);
+    det012 = -det012;
+  }
   for (std::int32_t y = ymin; y <= ymax; ++y) {
     for (std::int32_t x = xmin; x <= xmax; ++x) {
       Vec3f p{x + .5f, y + .5f, 0.f};
@@ -68,7 +75,7 @@ void draw(image_view& color_buffer, Vec3f v0, Vec3f v1, Vec3f v2) {
       float det20p = det2D(v0 - v2, p - v2);
 
       if (det01p >= 0.f && det12p >= 0.f && det20p >= 0) {
-        color_buffer.at(x, y) = color4ub(193, 18, 31, 255);
+        color_buffer.at(x, y) = color;
       }
     }
   }
