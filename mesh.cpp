@@ -1,6 +1,8 @@
 #include "mesh.h"
-
 #include <iostream>
+#include <fstream>
+#include <sstream>
+
 Mesh Mesh::createCube() {
   Mesh mesh;
   mesh.vertices = {
@@ -18,6 +20,35 @@ Mesh Mesh::createCube() {
       {0, 3, 7}, {7, 4, 0},  // Left face
       {1, 2, 6}, {6, 5, 1}   // Right face
   };
+  return mesh;
+}
+
+Mesh Mesh::createOBJ(char* filename){
+  Mesh mesh;
+  std::cout<<"Opening file:"<< filename<<std::endl;
+  std::ifstream file(filename);
+  if(!file.is_open()){
+     std::cerr << "Error: Could not open the file." << std::endl;
+        return mesh;
+  }
+  std::string line;
+  while (std::getline(file, line)) {
+        std::istringstream ss(line);
+        std::string prefix;
+        ss >> prefix;
+    if(prefix == "v"){
+      Vec3f vertex;
+      ss>>vertex.x >> vertex.y >>vertex.z;
+      mesh.vertices.push_back(vertex);
+    }
+    else if(prefix == "f"){
+      Vec3f face;
+      ss>>face.x >>face.y>>face.z;
+      mesh.faces.push_back(face);
+    }
+  }
+  
+  file.close();
   return mesh;
 }
 

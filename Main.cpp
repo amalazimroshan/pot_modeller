@@ -1,6 +1,6 @@
 #include <SDL2/SDL.h>
 #include <geometry.h>
-
+#include <chrono>
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -10,7 +10,7 @@
 #include "mesh.h"
 
 int screen_width = 1200, screen_height = 800, depth = 255;
-Vec3f eye(0, 0, 3);
+Vec3f eye(0, 0, 20);
 Vec3f center(0, 0, 0);
 
 Matrix viewPort(int x, int y, int w, int h) {
@@ -51,13 +51,19 @@ Matrix projection(float aspectRatio) {
   return m;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+  Mesh mesh;
+  if(argc < 2){
+    mesh = Mesh::createCube();
+  }
+  else{
+    mesh = Mesh::createOBJ(argv[argc-1]);
+  }
   Renderer renderer;
   renderer.initialize(screen_width, screen_height);
   bool isRunning = true;
   SDL_Event event;
 
-   Mesh cube =  Mesh::createCube();
 
     Matrix ModelView = lookAt(eye, center, Vec3f(0, 1, 0));
     float aspectRatio =
@@ -77,21 +83,19 @@ int main() {
     renderer.clear();
 
     float angle = SDL_GetTicks() / 100.0f;  // Rotation based on time
-    Matrix Model = Mesh::createScaleMatrix(Vec3f(1,2,1)) *  Mesh::createRotateMatrix(Vec3f(0, angle, 0));
+    Matrix Model =Mesh::createScaleMatrix(Vec3f(0.7,0.7,0.7)) *  Mesh::createTranslateMatrix(Vec3f(0,2,0)) *  Mesh::createRotateMatrix(Vec3f(180, angle, 0));
     
-    for (const auto& face : cube.faces) {
+    for (const auto& face : mesh.faces) {
       for (int i = 0; i < 3; i++) {
         Vec3f v0 = Vec3f(ViewPort * Projection * ModelView * Model *
-                         Matrix(cube.vertices[face[i]]));
+                         Matrix(mesh.vertices[face[i]]));
         Vec3f v1 = Vec3f(ViewPort * Projection * ModelView * Model *
-                         Matrix(cube.vertices[face[(i + 1) % 3]]));
+                         Matrix(mesh.vertices[face[(i + 1) % 3]]));
         renderer.drawLine(v0,v1);
       }
     }
-
     renderer.present();
   }
-
   renderer.shutdown();
   return 0;
 }

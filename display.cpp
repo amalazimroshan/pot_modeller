@@ -15,8 +15,6 @@ bool Renderer::initialize(int windowWidth, int windowHeight) {
     SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
     return false;
   }
-  // windowWidth = screenWidth;
-  // windowHeight = screenHeight;
   mWindow = SDL_CreateWindow("Physics Simulation", 100, 100, windowWidth,
                              windowHeight, 0);
   if (!mWindow) {
@@ -61,4 +59,5 @@ void Renderer::drawGrid(void) {
 void Renderer::drawLine(Vec3f p1, Vec3f p2) {
   SDL_SetRenderDrawColor(mSDLRenderer, 255, 255, 255, 255);
   SDL_RenderDrawLine(mSDLRenderer, p1.x, p1.y, p2.x, p2.y);
+  
 }
