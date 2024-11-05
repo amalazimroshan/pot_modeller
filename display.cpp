@@ -1,6 +1,9 @@
 #include "display.h"
-#include "image_view.hpp"
+
+#include <algorithm>
 #include <cmath>
+
+#include "image_view.hpp"
 
 Renderer::Renderer()
     : mWindow(nullptr),
@@ -37,12 +40,40 @@ void Renderer::shutdown() {
   SDL_DestroyWindow(mWindow);
 }
 
-void clear(rasterizer::image_view const& color_buffer, color4ub const& color ) {
+void clear(rasterizer::image_view const& color_buffer, color4ub const& color) {
   auto ptr = color_buffer.pixels;
   auto size = color_buffer.height * color_buffer.width;
-  std::fill(ptr,ptr+size, color);
-  
+  std::fill(ptr, ptr + size, color);
 }
+
+namespace rasterizer {
+void draw(image_view& color_buffer, Vec3f v0, Vec3f v1, Vec3f v2) {
+  std::int32_t xmin = std::max<float>(
+      0, std::min({std::floor(v0.x), std::floor(v1.x), std::floor(v2.x)}));
+  std::int32_t xmax = std::min<float>(
+      color_buffer.width - 1,
+      std::max({std::floor(v0.x), std::floor(v1.x), std::floor(v2.x)}));
+  std::int32_t ymin = std::max<float>(
+      0, std::min({std::floor(v0.y), std::floor(v1.y), std::floor(v2.y)}));
+  std::int32_t ymax = std::min<float>(
+      color_buffer.height - 1,
+      std::max({std::floor(v0.y), std::floor(v1.y), std::floor(v2.y)}));
+
+  for (std::int32_t y = ymin; y <= ymax; ++y) {
+    for (std::int32_t x = xmin; x <= xmax; ++x) {
+      Vec3f p{x + .5f, y + .5f, 0.f};
+
+      float det01p = det2D(v1 - v0, p - v0);
+      float det12p = det2D(v2 - v1, p - v1);
+      float det20p = det2D(v0 - v2, p - v2);
+
+      if (det01p >= 0.f && det12p >= 0.f && det20p >= 0) {
+        color_buffer.at(x, y) = color4ub(193, 18, 31, 255);
+      }
+    }
+  }
+}
+}  // namespace rasterizer
 
 void Renderer::present() { SDL_RenderPresent(mSDLRenderer); }
 
@@ -61,5 +92,4 @@ void Renderer::drawGrid(void) {
 void Renderer::drawLine(Vec3f p1, Vec3f p2) {
   SDL_SetRenderDrawColor(mSDLRenderer, 255, 255, 255, 255);
   SDL_RenderDrawLine(mSDLRenderer, p1.x, p1.y, p2.x, p2.y);
-  
 }

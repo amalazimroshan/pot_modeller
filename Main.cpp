@@ -124,8 +124,7 @@ int main(int argc, char* argv[]) {
         Vec3f v2 = Vec3f(ViewPort * Projection * ModelView * Model *
                          Matrix(mesh.vertices[face[(i + 2) % 3]]));
 
-        // std::cout << v0 << '\n' << v1 << '\n' << v2 << std::endl;
-        // exit(1);
+        rasterizer::draw(color_buffer, v0, v1, v2);
       }
     }
 
