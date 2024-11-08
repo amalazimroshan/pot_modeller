@@ -2,9 +2,8 @@
 #include <SDL2/SDL.h>
 
 #include <cstdint>
-
-#include "geometry.h"
-#include "image_view.hpp"
+#include <renderlite/geometry.hpp>
+#include <renderlite/image_view.hpp>
 
 namespace rasterizer {
 void clear(rasterizer::image_view const& color_buffer, color4ub const& color);

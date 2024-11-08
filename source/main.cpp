@@ -1,15 +1,14 @@
 #include <SDL2/SDL.h>
-#include <geometry.h>
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <image_view.hpp>
 #include <iostream>
 #include <limits>
-
-#include "display.h"
-#include "mesh.h"
+#include <renderlite/display.hpp>
+#include <renderlite/geometry.hpp>
+#include <renderlite/image_view.hpp>
+#include <renderlite/mesh.hpp>
 
 int screen_width = 1200, screen_height = 800, depth = 255;
 Vec3f eye(0, 0, 20);
@@ -122,7 +121,7 @@ int main(int argc, char* argv[]) {
       Vec3f v0 = Vec3f(MVP * Matrix(mesh.vertices[face[0]]));
       Vec3f v1 = Vec3f(MVP * Matrix(mesh.vertices[face[1]]));
       Vec3f v2 = Vec3f(MVP * Matrix(mesh.vertices[face[2]]));
-      const color4ub color = color4ub(120, i * 20, i * 20);
+      const color4ub color = color4ub(120, i * 10, i * 10);
       rasterizer::draw(color_buffer, v0, v1, v2, color);
     }
 

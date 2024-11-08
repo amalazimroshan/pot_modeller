@@ -1,9 +1,7 @@
-#include "display.h"
-
 #include <algorithm>
 #include <cmath>
-
-#include "image_view.hpp"
+#include <renderlite/display.hpp>
+#include <renderlite/image_view.hpp>
 
 Renderer::Renderer()
     : mWindow(nullptr),
