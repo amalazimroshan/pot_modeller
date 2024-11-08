@@ -65,6 +65,9 @@ int main(int argc, char* argv[]) {
       "tiny rasterizer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
       screen_width, screen_height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_SHOWN);
   SDL_Surface* draw_surface = nullptr;
+  float* zbuffer = new float[screen_height * screen_width];
+  std::fill_n(zbuffer, screen_height * screen_width,
+              std::numeric_limits<float>::max());
 
   bool isRunning = true;
   SDL_Event event;
@@ -122,9 +125,11 @@ int main(int argc, char* argv[]) {
       Vec3f v1 = Vec3f(MVP * Matrix(mesh.vertices[face[1]]));
       Vec3f v2 = Vec3f(MVP * Matrix(mesh.vertices[face[2]]));
       const color4ub color = color4ub(120, i * 10, i * 10);
-      rasterizer::draw(color_buffer, v0, v1, v2, color);
+      rasterizer::draw(color_buffer, zbuffer, v0, v1, v2, color);
     }
 
+    std::fill_n(zbuffer, screen_height * screen_width,
+                std::numeric_limits<float>::max());
     SDL_Rect rect{.x = 0, .y = 0, .w = screen_width, .h = screen_height};
     SDL_BlitSurface(draw_surface, &rect, SDL_GetWindowSurface(window), &rect);
     SDL_UpdateWindowSurface(window);

@@ -45,8 +45,8 @@ void clear(rasterizer::image_view const& color_buffer, color4ub const& color) {
 }
 
 namespace rasterizer {
-void draw(image_view& color_buffer, Vec3f v0, Vec3f v1, Vec3f v2,
-          color4ub color) {
+void draw(image_view& color_buffer, float* zbuffer, Vec3f v0, Vec3f v1,
+          Vec3f v2, color4ub color) {
   std::int32_t xmin = std::max<float>(
       0, std::min({std::floor(v0.x), std::floor(v1.x), std::floor(v2.x)}));
   std::int32_t xmax = std::min<float>(
@@ -73,7 +73,13 @@ void draw(image_view& color_buffer, Vec3f v0, Vec3f v1, Vec3f v2,
       float det20p = det2D(v0 - v2, p - v2);
 
       if (det01p >= 0.f && det12p >= 0.f && det20p >= 0) {
-        color_buffer.at(x, y) = color;
+        // float z = det01p * v0.z + det12p * v1.z + det20p * v2.z;
+        float z = (det01p * v0.z + det12p * v1.z + det20p * v2.z) / det012;
+        int index = int(x + y * 1200);
+        if (z < zbuffer[index]) {
+          zbuffer[index] = z;
+          color_buffer.at(x, y) = color;
+        }
       }
     }
   }

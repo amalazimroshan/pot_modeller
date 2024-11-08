@@ -7,9 +7,10 @@
 
 namespace rasterizer {
 void clear(rasterizer::image_view const& color_buffer, color4ub const& color);
-void draw(image_view& color_buffer, Vec3f v0, Vec3f v01, Vec3f v2,
-          color4ub color);
+void draw(image_view& color_buffer, float* zbuffer, Vec3f v0, Vec3f v01,
+          Vec3f v2, color4ub color);
 }  // namespace rasterizer
+
 class Renderer {
  public:
   Renderer();
